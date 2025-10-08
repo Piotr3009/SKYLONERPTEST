@@ -622,7 +622,13 @@ async function saveData() {
     try {
         // PRODUCTION PROJECTS
         if (projects.length > 0 && typeof supabaseClient !== 'undefined') {
-            // Zapisz projekty
+            // DEBUG: Sprawdź co jest w projects[] przed zapisem
+            console.log('🔍 DEBUG saveData - projects[] przed zapisem:');
+            projects.forEach(p => {
+                console.log(`  ${p.projectNumber}: google_drive_url=${p.google_drive_url}`);
+            });
+            
+            // Zapisz TYLKO dane projektów (bez faz)
             const projectsForDB = projects.map(p => ({
                 project_number: p.projectNumber,
                 type: p.type,
@@ -631,8 +637,16 @@ async function saveData() {
                 status: 'active',
                 notes: p.client || null,
                 contract_value: 0,
-                client_id: p.client_id || null
+                client_id: p.client_id || null,
+                google_drive_url: p.google_drive_url || null,
+                google_drive_folder_id: p.google_drive_folder_id || null
             }));
+            
+            // DEBUG: Sprawdź co idzie do bazy
+            const project018 = projectsForDB.find(p => p.project_number === '018/2025');
+            if (project018) {
+                console.log('🔍 DEBUG saveData - projekt 018 do bazy:', project018);
+            }
             
             const { data, error } = await supabaseClient
                 .from('projects')
@@ -642,25 +656,8 @@ async function saveData() {
                 console.error('Error saving projects:', error);
             } else {
                 console.log('✅ Projects saved to Supabase!');
-                
-                // ZAPISZ FAZY - czekamy na zakończenie!
-                for (const project of projects) {
-                    if (project.phases && project.phases.length > 0) {
-                        const { data: projectData } = await supabaseClient
-                            .from('projects')
-                            .select('id')
-                            .eq('project_number', project.projectNumber)
-                            .single();
-                            
-                        if (projectData) {
-                            await savePhasesToSupabase(
-                                projectData.id, 
-                                project.phases, 
-                                true
-                            );
-                        }
-                    }
-                }
+                // FAZY NIE SĄ ZAPISYWANE TUTAJ!
+                // Fazy zapisywane tylko przy edycji fazy (modals.js, drag.js)
             }
         }
         
@@ -912,3 +909,18 @@ function clearAll() {
         render();
     }
 }
+
+// ========== GOOGLE DRIVE HELPER ==========
+// Function to update Google Drive info for a project (called from google-drive-picker.js)
+window.updateProjectGoogleDrive = function(projectNumber, folderUrl, folderId, folderName) {
+    const projectIndex = projects.findIndex(p => p.projectNumber === projectNumber);
+    if (projectIndex !== -1) {
+        projects[projectIndex].google_drive_url = folderUrl;
+        projects[projectIndex].google_drive_folder_id = folderId;
+        projects[projectIndex].google_drive_folder_name = folderName;
+        console.log('✅ Updated project in projects[] array:', projectNumber);
+        return true;
+    }
+    console.error('❌ Project not found in projects[]:', projectNumber);
+    return false;
+};
