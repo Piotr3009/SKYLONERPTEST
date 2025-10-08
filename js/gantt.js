@@ -324,11 +324,22 @@ function createPhaseBar(phase, project, projectIndex, phaseIndex, overlaps) {
         };
     }
     
-   // Zawsze szukaj w teamMembers po ID
-   const teamMember = phase.assignedTo ? 
-       teamMembers.find(m => m.id === phase.assignedTo) : null;
-    
-    container.className = 'phase-container';
+  
+
+    const teamMember = phase.assignedTo ? 
+    teamMembers.find(m => m.id === phase.assignedTo) : null;
+
+// DIAGNOSTYKA
+if (phase.assignedTo && !teamMember) {
+    console.error(`❌ Nie znaleziono teamMember dla assignedTo: ${phase.assignedTo}`, 
+                  `Phase: ${phase.key}`, 
+                  `teamMembers length: ${teamMembers.length}`);
+}
+if (teamMember) {
+    console.log(`✅ Znaleziono teamMember:`, teamMember.name, `Color:`, teamMember.color, `Phase:`, phase.key);
+}
+
+container.className = 'phase-container';
     
     // Check if should flash
     if ((phase.key === 'order' || phase.key === 'orderSpray' || phase.key === 'orderGlazing') && !phase.orderConfirmed) {
