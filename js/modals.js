@@ -10,7 +10,7 @@ async function loadTeamMembersForPhase(phaseKey) {
             // Timber i Glazing → dział Production
             query = supabaseClient
                 .from('team_members')
-                .select('id, name, employee_number, color')
+                .select('id, name, employee_number, color_code')
                 .eq('active', true)
                 .eq('department', 'production')
                 .order('name');
@@ -19,7 +19,7 @@ async function loadTeamMembersForPhase(phaseKey) {
             // Spray → dział Spray
             query = supabaseClient
                 .from('team_members')
-                .select('id, name, employee_number, color')
+                .select('id, name, employee_number, color_code')
                 .eq('active', true)
                 .eq('department', 'spray')
                 .order('name');
@@ -28,7 +28,7 @@ async function loadTeamMembersForPhase(phaseKey) {
             // Dispatch → działy Drivers LUB Installation
             query = supabaseClient
                 .from('team_members')
-                .select('id, name, employee_number, color')
+                .select('id, name, employee_number, color_code')
                 .eq('active', true)
                 .or('department.eq.drivers,department.eq.installation')
                 .order('name');
