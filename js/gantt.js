@@ -36,7 +36,28 @@ function getSortedProjects() {
             if (!b.deadline) return -1;
             return new Date(a.deadline) - new Date(b.deadline);
         });
+    } else if (currentSortMode === 'timber') {
+        sortedProjects.sort((a, b) => {
+            const timberA = a.phases?.find(p => p.key === 'timber');
+            const timberB = b.phases?.find(p => p.key === 'timber');
+            
+            if (!timberA || !timberA.start) return 1;
+            if (!timberB || !timberB.start) return -1;
+            
+            return new Date(timberA.start) - new Date(timberB.start);
+        });
+    } else if (currentSortMode === 'spray') {
+        sortedProjects.sort((a, b) => {
+            const sprayA = a.phases?.find(p => p.key === 'spray');
+            const sprayB = b.phases?.find(p => p.key === 'spray');
+            
+            if (!sprayA || !sprayA.start) return 1;
+            if (!sprayB || !sprayB.start) return -1;
+            
+            return new Date(sprayA.start) - new Date(sprayB.start);
+        });
     } else {
+        // Default: by number
         sortedProjects.sort((a, b) => {
             const numA = parseInt(a.projectNumber.split('/')[0]);
             const numB = parseInt(b.projectNumber.split('/')[0]);
@@ -324,22 +345,11 @@ function createPhaseBar(phase, project, projectIndex, phaseIndex, overlaps) {
         };
     }
     
-  
-
-    const teamMember = phase.assignedTo ? 
-    teamMembers.find(m => m.id === phase.assignedTo) : null;
-
-// DIAGNOSTYKA
-if (phase.assignedTo && !teamMember) {
-    console.error(`❌ Nie znaleziono teamMember dla assignedTo: ${phase.assignedTo}`, 
-                  `Phase: ${phase.key}`, 
-                  `teamMembers length: ${teamMembers.length}`);
-}
-if (teamMember) {
-    console.log(`✅ Znaleziono teamMember:`, teamMember.name, `Color:`, teamMember.color, `Phase:`, phase.key);
-}
-
-container.className = 'phase-container';
+   // Zawsze szukaj w teamMembers po ID
+   const teamMember = phase.assignedTo ? 
+       teamMembers.find(m => m.id === phase.assignedTo) : null;
+    
+    container.className = 'phase-container';
     
     // Check if should flash
     if ((phase.key === 'order' || phase.key === 'orderSpray' || phase.key === 'orderGlazing') && !phase.orderConfirmed) {
@@ -429,7 +439,7 @@ container.className = 'phase-container';
         }
     } else if (teamMember) {
         topDiv.classList.add('has-team');
-        topDiv.style.background = `linear-gradient(to bottom, ${phaseConfig.color} 50%, ${teamMember.color} 50%)`;
+        topDiv.style.background = `linear-gradient(to bottom, ${phaseConfig.color} 50%, ${teamMember.color_code || teamMember.color} 50%)`;
     } else {
         topDiv.style.background = phaseConfig.color;
     }
@@ -446,7 +456,7 @@ container.className = 'phase-container';
     
     // ADD CARPENTER NAME
     if (teamMember) {
-        bottomContent += `<span style="font-size: 9px; color: ${teamMember.color}; margin-left: 4px;">${teamMember.name}</span>`;
+        bottomContent += `<span style="font-size: 9px; color: ${teamMember.color_code || teamMember.color}; margin-left: 4px;">${teamMember.name}</span>`;
     }
     
     if (phase.notes) {

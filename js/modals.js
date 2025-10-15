@@ -10,7 +10,7 @@ async function loadTeamMembersForPhase(phaseKey) {
             // Timber i Glazing → dział Production
             query = supabaseClient
                 .from('team_members')
-                .select('id, name, employee_number, color_code')
+                .select('id, name, employee_number, color')
                 .eq('active', true)
                 .eq('department', 'production')
                 .order('name');
@@ -19,7 +19,7 @@ async function loadTeamMembersForPhase(phaseKey) {
             // Spray → dział Spray
             query = supabaseClient
                 .from('team_members')
-                .select('id, name, employee_number, color_code')
+                .select('id, name, employee_number, color')
                 .eq('active', true)
                 .eq('department', 'spray')
                 .order('name');
@@ -28,7 +28,7 @@ async function loadTeamMembersForPhase(phaseKey) {
             // Dispatch → działy Drivers LUB Installation
             query = supabaseClient
                 .from('team_members')
-                .select('id, name, employee_number, color_code')
+                .select('id, name, employee_number, color')
                 .eq('active', true)
                 .or('department.eq.drivers,department.eq.installation')
                 .order('name');
@@ -108,7 +108,7 @@ function openPhaseEditModal(projectIndex, phaseIndex) {
                 const option = document.createElement('option');
                 option.value = emp.id;
                 option.textContent = `${emp.name} (${emp.employee_number || '-'})`;
-                option.dataset.color = emp.color || '#999999';
+                option.dataset.color = emp.color_code || emp.color || '#999999';
                 
                 if (phase.assignedTo === emp.id) {
                     option.selected = true;
@@ -1282,79 +1282,15 @@ function openMoveToArchiveModal() {
     const select = document.getElementById('completedProjectSelect');
     select.innerHTML = '<option value="">Select project...</option>';
     
+    // Show ALL projects (removed filter - user can archive any project)
     projects.forEach((project, index) => {
-        // Check if all phases are completed
-        const allCompleted = project.phases && project.phases.every(phase => 
-            phase.status === 'completed' || phase.status === 'dispatched'
-        );
-        
-        if (allCompleted || !project.phases || project.phases.length === 0) {
-            const option = document.createElement('option');
-            option.value = index;
-            option.textContent = `${project.projectNumber} - ${project.name}`;
-            select.appendChild(option);
-        }
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${project.projectNumber} - ${project.name}`;
+        select.appendChild(option);
     });
     
     openModal('moveToArchiveModal');
-}
-
-// Confirm move to archive
-async function confirmMoveToArchive() {
-    const selectedIndex = document.getElementById('completedProjectSelect').value;
-    const reason = document.getElementById('archiveReason').value;
-    const notes = document.getElementById('archiveNotes').value.trim();
-    
-    if (!selectedIndex) {
-        alert('Please select a project to archive');
-        return;
-    }
-    
-    const project = projects[selectedIndex];
-    
-    // Add to completed archive
-    const archivedProject = {
-        ...project,
-        archivedDate: new Date().toISOString(),
-        archiveReason: reason,
-        archiveNotes: notes
-    };
-    
-    completedArchive.push(archivedProject);
-    
-    // Remove from active projects
-    projects.splice(selectedIndex, 1);
-    
-    // Update database if online
-    if (typeof supabaseClient !== 'undefined' && project.projectNumber) {
-        try {
-            // Update project status in database
-            await supabaseClient
-                .from('projects')
-                .update({ 
-                    status: 'archived',
-                    archived_date: archivedProject.archivedDate,
-                    archive_reason: reason,
-                    archive_notes: notes
-                })
-                .eq('project_number', project.projectNumber);
-                
-            console.log('✅ Project archived in database');
-        } catch (err) {
-            console.error('Error archiving in database:', err);
-        }
-    }
-    
-    // MARK AS CHANGED
-    if (typeof markAsChanged === 'function') {
-        markAsChanged();
-    }
-    
-    saveData();
-        renderUniversal();
-    closeModal('moveToArchiveModal');
-    
-    alert(`Project ${project.projectNumber} has been archived successfully!`);
 }
 
 // Helper functions for materials
